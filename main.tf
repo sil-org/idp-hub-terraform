@@ -21,7 +21,7 @@ locals {
 
 module "app" {
   source  = "silinternational/ecs-app/aws"
-  version = "~> 0.10.4"
+  version = "~> 0.10.5"
 
   app_env                  = local.app_env
   app_name                 = var.app_name
@@ -34,6 +34,7 @@ module "app" {
   desired_count            = var.desired_count
   subdomain                = var.subdomain
   create_dashboard         = var.create_dashboard
+  asg_additional_user_data = var.asg_additional_user_data
   asg_min_size             = var.asg_min_size
   asg_max_size             = var.asg_max_size
   instance_type            = var.instance_type
