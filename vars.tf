@@ -162,6 +162,12 @@ variable "subdomain" {
  * ECS and ASG configuration
  */
 
+variable "asg_additional_user_data" {
+  description = "Bash code to append to the default EC2 user_data."
+  type        = string
+  default     = ""
+}
+
 variable "asg_min_size" {
   description = "minimum number of EC2 instances in the autoscaling group"
   type        = number
