@@ -20,7 +20,7 @@ locals {
 }
 
 module "app" {
-  source  = "silinternational/ecs-app/aws"
+  source  = "sil-org/ecs-app/aws"
   version = "~> 0.10.5"
 
   app_env                  = local.app_env
@@ -117,7 +117,7 @@ resource "random_id" "ssp_secret_salt" {
  * Create task definition template
  */
 locals {
-  task_def_hub = templatefile("${path.module}/task-def-hub.json", {
+  task_def_hub = templatefile("task-def-hub.json.tftpl", {
     admin_email               = var.admin_email
     admin_name                = var.admin_name
     admin_pass                = sensitive(random_id.ssp_admin_pass.hex)
@@ -186,7 +186,7 @@ resource "aws_iam_user_policy" "dynamodb-logger-policy" {
  * Create ECR repo
  */
 module "ecr" {
-  source                = "github.com/silinternational/terraform-modules//aws/ecr?ref=8.13.3"
+  source                = "github.com/sil-org/terraform-modules//aws/ecr?ref=8.13.3"
   repo_name             = local.ecr_repo_name
   ecsInstanceRole_arn   = module.app.ecsInstanceRole_arn
   ecsServiceRole_arn    = module.app.ecsServiceRole_arn
@@ -221,7 +221,7 @@ resource "aws_dynamodb_table" "logger" {
 module "aws_backup" {
   count = var.enable_aws_backup ? 1 : 0
 
-  source  = "silinternational/backup/aws"
+  source  = "sil-org/backup/aws"
   version = "~> 0.2.2"
 
   app_name = "${var.app_name}-${var.aws_region}"
