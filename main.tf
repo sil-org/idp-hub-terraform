@@ -9,7 +9,7 @@ locals {
   create_cd_user          = !local.is_multiregion || local.is_multiregion_primary
   mysql_database          = "session"
   mysql_user              = "root"
-  parameter_path          = "${var.app_name}/${var.app_env}"
+  parameter_path          = "/${var.app_name}/${var.app_env}"
   database_engine_version = "10.6"
   tags = {
     managed_by        = "terraform"
@@ -290,7 +290,7 @@ resource "aws_iam_role_policy" "ecs_task_execution_ssm_policy" {
           "ssm:DeleteParameters",
         ]
         Resource = [
-          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.this.account_id}:parameter/${local.parameter_path}/*"
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.this.account_id}:parameter${local.parameter_path}/*"
         ]
       }
     ]
