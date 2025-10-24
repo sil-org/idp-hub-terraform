@@ -300,31 +300,36 @@ resource "aws_iam_role_policy" "ecs_task_execution_ssm_policy" {
 data "aws_caller_identity" "this" {}
 
 resource "aws_ssm_parameter" "admin_pass" {
-  name  = "${local.parameter_path}/admin_pass"
-  type  = "SecureString"
-  value = random_id.ssp_admin_pass.hex
+  name        = "${local.parameter_path}/admin_pass"
+  type        = "SecureString"
+  value       = random_id.ssp_admin_pass.hex
+  description = "Value set by Terraform -- do not change manually."
 }
 
 resource "aws_ssm_parameter" "secret_salt" {
-  name  = "${local.parameter_path}/secret_salt"
-  type  = "SecureString"
-  value = random_id.ssp_secret_salt.hex
+  name        = "${local.parameter_path}/secret_salt"
+  type        = "SecureString"
+  value       = random_id.ssp_secret_salt.hex
+  description = "Value set by Terraform -- do not change manually."
 }
 
 resource "aws_ssm_parameter" "dynamo_access_key_id" {
-  name  = "${local.parameter_path}/dynamo_access_key_id"
-  type  = "SecureString"
-  value = aws_iam_access_key.user_login_logger.id
+  name        = "${local.parameter_path}/dynamo_access_key_id"
+  type        = "SecureString"
+  value       = aws_iam_access_key.user_login_logger.id
+  description = "Value set by Terraform -- do not change manually."
 }
 
 resource "aws_ssm_parameter" "dynamo_secret_access_key" {
-  name  = "${local.parameter_path}/dynamo_secret_access_key"
-  type  = "SecureString"
-  value = aws_iam_access_key.user_login_logger.secret
+  name        = "${local.parameter_path}/dynamo_secret_access_key"
+  type        = "SecureString"
+  value       = aws_iam_access_key.user_login_logger.secret
+  description = "Value set by Terraform -- do not change manually."
 }
 
 resource "aws_ssm_parameter" "mysql_password" {
-  name  = "${local.parameter_path}/mysql_password"
-  type  = "SecureString"
-  value = module.app.database_password
+  name        = "${local.parameter_path}/mysql_password"
+  type        = "SecureString"
+  value       = module.app.database_password
+  description = "Value set by Terraform -- do not change manually."
 }
