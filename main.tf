@@ -9,6 +9,7 @@ locals {
   create_cd_user          = !local.is_multiregion || local.is_multiregion_primary
   mysql_database          = "session"
   mysql_user              = "root"
+  parameter_path          = "/${var.app_name}/${var.app_env}"
   database_engine_version = "10.6"
   tags = {
     managed_by        = "terraform"
@@ -21,7 +22,7 @@ locals {
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 0.10.5"
+  version = "~> 0.10.6"
 
   app_env                  = local.app_env
   app_name                 = var.app_name
@@ -49,6 +50,7 @@ module "app" {
   asg_tags                 = local.tags
   disable_public_ipv4      = true
   enable_ipv6              = true
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   database_auto_minor_version_upgrade = true
   database_engine_version             = local.database_engine_version
@@ -120,7 +122,6 @@ locals {
   task_def_hub = templatefile("task-def-hub.json.tftpl", {
     admin_email               = var.admin_email
     admin_name                = var.admin_name
-    admin_pass                = sensitive(random_id.ssp_admin_pass.hex)
     analytics_id              = var.analytics_id
     app_env                   = local.app_env
     app_name                  = var.app_name
@@ -130,8 +131,6 @@ locals {
     cpu                       = var.cpu
     docker_image              = module.ecr.repo_url
     docker_tag                = var.docker_tag
-    dynamo_access_key_id      = aws_iam_access_key.user_login_logger.id
-    dynamo_secret_access_key  = aws_iam_access_key.user_login_logger.secret
     enable_debug              = var.enable_debug
     help_center_url           = var.help_center_url
     logging_level             = upper(var.logging_level)
@@ -139,13 +138,17 @@ locals {
     mysql_host                = module.app.database_host
     mysql_database            = local.mysql_database
     mysql_user                = local.mysql_user
-    mysql_password            = module.app.database_password
-    secret_salt               = random_id.ssp_secret_salt.hex
     session_store_type        = "sql"
     show_saml_errors          = var.show_saml_errors
     ssl_ca_base64             = data.external.fetch_rds_ca.result["ca_base64"]
     subdomain                 = var.subdomain
     theme_color_scheme        = var.theme_color_scheme
+
+    admin_pass_arn               = aws_ssm_parameter.admin_pass.arn
+    secret_salt_arn              = aws_ssm_parameter.secret_salt.arn
+    dynamo_access_key_id_arn     = aws_ssm_parameter.dynamo_access_key_id.arn
+    dynamo_secret_access_key_arn = aws_ssm_parameter.dynamo_secret_access_key.arn
+    mysql_password_arn           = aws_ssm_parameter.mysql_password.arn
   })
 }
 
@@ -244,4 +247,89 @@ module "aws_backup" {
  */
 data "external" "fetch_rds_ca" {
   program = ["bash", "${path.module}/fetch_ca.sh", local.aws_rds_ca_url]
+}
+
+/*
+ * ECS Task Execution Role to allow ECS to assume a role for access to SSM Parameter Store
+ */
+
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecs-task-execution-${var.app_name}-${var.app_env}-${var.aws_region}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy" "ecs_task_execution_ssm_policy" {
+  name = "ssm-parameter-access"
+  role = aws_iam_role.ecs_task_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameters",
+          "ssm:PutParameters",
+          "ssm:DeleteParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.this.account_id}:parameter${local.parameter_path}/*"
+        ]
+      }
+    ]
+  })
+}
+
+data "aws_caller_identity" "this" {}
+
+resource "aws_ssm_parameter" "admin_pass" {
+  name        = "${local.parameter_path}/admin_pass"
+  type        = "SecureString"
+  value       = random_id.ssp_admin_pass.hex
+  description = "Value set by Terraform -- do not change manually."
+}
+
+resource "aws_ssm_parameter" "secret_salt" {
+  name        = "${local.parameter_path}/secret_salt"
+  type        = "SecureString"
+  value       = random_id.ssp_secret_salt.hex
+  description = "Value set by Terraform -- do not change manually."
+}
+
+resource "aws_ssm_parameter" "dynamo_access_key_id" {
+  name        = "${local.parameter_path}/dynamo_access_key_id"
+  type        = "SecureString"
+  value       = aws_iam_access_key.user_login_logger.id
+  description = "Value set by Terraform -- do not change manually."
+}
+
+resource "aws_ssm_parameter" "dynamo_secret_access_key" {
+  name        = "${local.parameter_path}/dynamo_secret_access_key"
+  type        = "SecureString"
+  value       = aws_iam_access_key.user_login_logger.secret
+  description = "Value set by Terraform -- do not change manually."
+}
+
+resource "aws_ssm_parameter" "mysql_password" {
+  name        = "${local.parameter_path}/mysql_password"
+  type        = "SecureString"
+  value       = module.app.database_password
+  description = "Value set by Terraform -- do not change manually."
 }
