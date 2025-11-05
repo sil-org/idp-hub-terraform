@@ -6,7 +6,6 @@ locals {
   ecr_repo_name           = local.app_name_and_env
   is_multiregion          = var.aws_region_secondary != ""
   is_multiregion_primary  = local.is_multiregion && var.aws_region != var.aws_region_secondary
-  create_cd_user          = !local.is_multiregion || local.is_multiregion_primary
   mysql_database          = "session"
   mysql_user              = "root"
   parameter_path          = "/${var.app_name}/${var.app_env}"
@@ -22,14 +21,14 @@ locals {
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 0.11.0"
+  version = "~> 0.12.0"
 
   app_env                  = local.app_env
   app_name                 = var.app_name
   domain_name              = var.cloudflare_domain
   container_def_json       = local.task_def_hub
   create_dns_record        = false
-  create_cd_user           = local.create_cd_user
+  create_cd_user           = true
   database_name            = local.mysql_database
   database_user            = local.mysql_user
   desired_count            = var.desired_count
@@ -193,7 +192,7 @@ module "ecr" {
   repo_name             = local.ecr_repo_name
   ecsInstanceRole_arn   = module.app.ecsInstanceRole_arn
   ecsServiceRole_arn    = module.app.ecsServiceRole_arn
-  cd_user_arn           = local.create_cd_user ? module.app.cd_user_arn : var.cd_user_arn
+  cd_user_arn           = module.app.cd_user_arn
   image_retention_count = 20
   image_retention_tags  = ["latest", "develop"]
 }
