@@ -271,3 +271,9 @@ variable "enable_cloudflare_proxy" {
   type        = bool
   default     = true
 }
+
+variable "use_cloudflare_security_group" {
+  description = "Use the Cloudflare security group to block all ingress traffic except from Cloudflare."
+  type        = bool
+  default     = "true"
+}

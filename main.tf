@@ -50,6 +50,7 @@ module "app" {
   disable_public_ipv4      = true
   enable_ipv6              = true
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  use_cloudflare_sg        = var.use_cloudflare_security_group
 
   database_auto_minor_version_upgrade = true
   database_engine_version             = local.database_engine_version
