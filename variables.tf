@@ -260,3 +260,14 @@ variable "delete_recovery_point_after_days" {
   type        = number
   default     = 30
 }
+
+
+/*
+ * Cloudflare configuration
+ */
+
+variable "enable_cloudflare_proxy" {
+  description = "Enable the Cloudflare proxy service on the CAM DNS record"
+  type        = bool
+  default     = true
+}

@@ -80,7 +80,7 @@ resource "cloudflare_record" "intermediate" {
   value   = module.app.alb_dns_name
   type    = "CNAME"
   comment = "intermediate record - DO NOT change this"
-  proxied = true
+  proxied = var.enable_cloudflare_proxy
 }
 
 /*
@@ -94,7 +94,7 @@ resource "cloudflare_record" "public" {
   value   = cloudflare_record.intermediate.hostname
   type    = "CNAME"
   comment = "public record - this can be changed for failover"
-  proxied = true
+  proxied = var.enable_cloudflare_proxy
 }
 
 data "cloudflare_zone" "this" {
