@@ -222,8 +222,6 @@ resource "aws_dynamodb_table" "logger" {
  * SSM Parameter Store backup
  */
 module "ssm_backup" {
-  count = var.enable_ssm_backup ? 1 : 0
-
   source  = "sil-org/ssm-backup/aws"
   version = "~> 1.0.0"
 

@@ -282,16 +282,16 @@ variable "use_cloudflare_security_group" {
  * SSM Backup
  */
 
-variable "enable_ssm_backup" {
-  description = "Whether the SSM parameter backup EventBridge schedule is enabled"
-  type        = bool
-  default     = true
-}
-
 variable "ssm_backup_retention_days" {
-  description = "Number of days to retain noncurrent SSM backup versions in S3 before expiring them"
+  description = "Number of days to retain noncurrent SSM backup versions in S3"
   type        = number
   default     = 90
+}
+
+variable "ssm_backup_enabled" {
+  description = "Whether the SSM parameter backup schedule is enabled"
+  type        = bool
+  default     = true
 }
 
 variable "ssm_backup_schedule" {
