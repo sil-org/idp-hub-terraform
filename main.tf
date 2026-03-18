@@ -218,6 +218,22 @@ resource "aws_dynamodb_table" "logger" {
   }
 }
 
+/*
+ * SSM Parameter Store backup
+ */
+module "ssm_backup" {
+  count = var.enable_ssm_backup ? 1 : 0
+
+  source  = "sil-org/ssm-backup/aws"
+  version = "~> 1.0.0"
+
+  app_env        = var.app_env
+  app_name       = var.app_name
+  aws_region     = var.aws_region
+  parameter_path = local.parameter_path
+  retention_days = var.ssm_backup_retention_days
+  schedule       = var.ssm_backup_schedule
+}
 
 /*
  * AWS backup
