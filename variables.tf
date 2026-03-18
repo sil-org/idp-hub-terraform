@@ -277,3 +277,25 @@ variable "use_cloudflare_security_group" {
   type        = bool
   default     = "true"
 }
+
+/*
+ * SSM Backup
+ */
+
+variable "ssm_backup_retention_days" {
+  description = "Number of days to retain noncurrent SSM backup versions in S3"
+  type        = number
+  default     = 90
+}
+
+variable "ssm_backup_enabled" {
+  description = "Whether the SSM parameter backup schedule is enabled"
+  type        = bool
+  default     = true
+}
+
+variable "ssm_backup_schedule" {
+  description = "EventBridge cron schedule for SSM parameter backup"
+  type        = string
+  default     = "cron(0 3 * * ? *)" # Every day at 03:00 UTC
+}
