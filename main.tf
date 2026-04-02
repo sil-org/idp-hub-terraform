@@ -21,14 +21,16 @@ locals {
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 0.12.0"
+  version = "~> 0.13.0"
 
   app_env                      = local.app_env
   app_name                     = var.app_name
   domain_name                  = var.cloudflare_domain
   container_def_json           = local.task_def_hub
   create_dns_record            = false
-  create_cd_user               = true
+  create_cd_role               = true
+  github_oidc_provider_arn     = var.github_oidc_provider_arn
+  github_repository            = var.github_repository
   database_deletion_protection = true
   database_name                = local.mysql_database
   database_user                = local.mysql_user
@@ -194,7 +196,7 @@ module "ecr" {
   repo_name             = local.ecr_repo_name
   ecsInstanceRole_arn   = module.app.ecsInstanceRole_arn
   ecsServiceRole_arn    = module.app.ecsServiceRole_arn
-  cd_user_arn           = module.app.cd_user_arn
+  cd_user_arn           = module.app.cd_role_arn
   image_retention_count = 20
   image_retention_tags  = ["latest"]
 }

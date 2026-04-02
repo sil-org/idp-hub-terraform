@@ -62,6 +62,24 @@ variable "docker_tag" {
   default     = "latest"
 }
 
+variable "github_oidc_provider_arn" {
+  description = <<-EOT
+    ARN of the OIDC provider for GitHub in AWS IAM, used for GitHub Actions to authenticate to AWS. The provider
+    can be created in Terraform using the `aws_iam_openid_connect_provider` resource. Specify the URL as
+    "https://token.actions.githubusercontent.com" and the client_id_list as ["sts.amazonaws.com"].
+    This is required if `create_cd_role` is true.
+  EOT
+  type        = string
+}
+
+variable "github_repository" {
+  description = <<-EOT
+    GitHub repository that should be granted access to the OIDC provider for GitHub. Format should be 'owner/repo'.
+    This is required if `create_cd_role` is true.
+  EOT
+  type        = string
+}
+
 variable "require_secure_transport" {
   description = "Set to true to require SSL for database connection."
   type        = bool
