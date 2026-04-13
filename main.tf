@@ -192,11 +192,12 @@ resource "aws_iam_user_policy" "dynamodb-logger-policy" {
  * Create ECR repo
  */
 module "ecr" {
-  source                = "github.com/sil-org/terraform-modules//aws/ecr?ref=8.13.3"
+  source  = "sil-org/ecr/aws"
+  version = "~> 0.3.0"
+
   repo_name             = local.ecr_repo_name
-  ecsInstanceRole_arn   = module.app.ecsInstanceRole_arn
-  ecsServiceRole_arn    = module.app.ecsServiceRole_arn
-  cd_user_arn           = module.app.cd_role_arn
+  instance_role_arn     = module.app.ecsInstanceRole_arn
+  cd_principal_arn      = module.app.cd_role_arn
   image_retention_count = 20
   image_retention_tags  = ["latest"]
 }
