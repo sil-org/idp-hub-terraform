@@ -229,7 +229,7 @@ module "ssm_backup" {
   version = "~> 1.0.0"
 
   app_env        = var.app_env
-  app_name       = var.app_name
+  app_name       = "${var.app_name}-${var.aws_region}"
   aws_region     = var.aws_region
   enabled        = var.ssm_backup_enabled
   parameter_path = local.parameter_path
