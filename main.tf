@@ -226,7 +226,7 @@ resource "aws_dynamodb_table" "logger" {
  */
 module "ssm_backup" {
   source  = "sil-org/ssm-backup/aws"
-  version = "~> 1.0.0"
+  version = "~> 2.0"
 
   app_env        = var.app_env
   app_name       = var.app_name
