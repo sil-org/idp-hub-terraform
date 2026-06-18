@@ -312,8 +312,8 @@ resource "aws_iam_role" "ecs_task" {
   })
 }
 
-resource "aws_iam_role_policy" "ecs_task_ssm_policy" {
-  name = "ssm-parameter-access"
+resource "aws_iam_role_policy" "ecs_task" {
+  name = "ecs-task"
   role = aws_iam_role.ecs_task.id
 
   policy = jsonencode({
