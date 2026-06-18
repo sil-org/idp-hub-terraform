@@ -17,11 +17,12 @@ locals {
     itse_app_env      = local.app_environment
     itse_app_name     = "idp-hub"
   }
+  aws_account = data.aws_caller_identity.this.account_id
 }
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 0.13.0"
+  version = "~> 0.15.0"
 
   app_env                      = local.app_env
   app_name                     = var.app_name
@@ -53,6 +54,7 @@ module "app" {
   disable_public_ipv4          = true
   enable_ipv6                  = true
   execution_role_arn           = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn                = aws_iam_role.ecs_task.arn
   use_cloudflare_sg            = var.use_cloudflare_security_group
 
   database_auto_minor_version_upgrade = true
@@ -147,44 +149,9 @@ locals {
     subdomain                 = var.subdomain
     theme_color_scheme        = var.theme_color_scheme
 
-    admin_pass_arn               = aws_ssm_parameter.admin_pass.arn
-    secret_salt_arn              = aws_ssm_parameter.secret_salt.arn
-    dynamo_access_key_id_arn     = aws_ssm_parameter.dynamo_access_key_id.arn
-    dynamo_secret_access_key_arn = aws_ssm_parameter.dynamo_secret_access_key.arn
-    mysql_password_arn           = aws_ssm_parameter.mysql_password.arn
-  })
-}
-
-/*
- * Create user for dynamo permissions
- */
-resource "aws_iam_user" "user_login_logger" {
-  name = "idp_hub_user_login_logger-${local.app_name_and_env}-${var.aws_region}"
-}
-
-/*
- * Create key for dynamo permissions
- */
-resource "aws_iam_access_key" "user_login_logger" {
-  user = aws_iam_user.user_login_logger.name
-}
-
-/*
- * Allow user_login_logger user to write to Dynamodb
- */
-resource "aws_iam_user_policy" "dynamodb-logger-policy" {
-  name = "dynamodb_user_login_logger_policy-${local.app_name_and_env}"
-  user = aws_iam_user.user_login_logger.name
-
-  policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Action" : ["dynamodb:PutItem"],
-        "Resource" : aws_dynamodb_table.logger.arn
-      }
-    ]
+    admin_pass_arn     = aws_ssm_parameter.admin_pass.arn
+    secret_salt_arn    = aws_ssm_parameter.secret_salt.arn
+    mysql_password_arn = aws_ssm_parameter.mysql_password.arn
   })
 }
 
@@ -269,7 +236,7 @@ data "external" "fetch_rds_ca" {
 }
 
 /*
- * ECS Task Execution Role to allow ECS to assume a role for access to SSM Parameter Store
+ * ECS Execution Role to allow ECS to assume a role for access to SSM Parameter Store
  */
 
 resource "aws_iam_role" "ecs_task_execution_role" {
@@ -309,8 +276,53 @@ resource "aws_iam_role_policy" "ecs_task_execution_ssm_policy" {
           "ssm:DeleteParameters",
         ]
         Resource = [
-          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.this.account_id}:parameter${local.parameter_path}/*"
+          "arn:aws:ssm:${var.aws_region}:${local.aws_account}:parameter${local.parameter_path}/*"
         ]
+      }
+    ]
+  })
+}
+
+/*
+ * ECS Task Role for the app to use during normal operation
+ */
+
+resource "aws_iam_role" "ecs_task" {
+  name = "ecs-task-${var.app_name}-${var.app_env}-${var.aws_region}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+        Condition = {
+          ArnLike = {
+            "aws:SourceArn" = "arn:aws:ecs:${var.aws_region}:${local.aws_account}:*"
+          }
+          StringEquals = {
+            "aws:SourceAccount" = local.aws_account
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task_ssm_policy" {
+  name = "ssm-parameter-access"
+  role = aws_iam_role.ecs_task.id
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : ["dynamodb:PutItem"],
+        "Resource" : aws_dynamodb_table.logger.arn
       }
     ]
   })
@@ -329,20 +341,6 @@ resource "aws_ssm_parameter" "secret_salt" {
   name        = "${local.parameter_path}/secret_salt"
   type        = "SecureString"
   value       = random_id.ssp_secret_salt.hex
-  description = "Value set by Terraform -- do not change manually."
-}
-
-resource "aws_ssm_parameter" "dynamo_access_key_id" {
-  name        = "${local.parameter_path}/dynamo_access_key_id"
-  type        = "SecureString"
-  value       = aws_iam_access_key.user_login_logger.id
-  description = "Value set by Terraform -- do not change manually."
-}
-
-resource "aws_ssm_parameter" "dynamo_secret_access_key" {
-  name        = "${local.parameter_path}/dynamo_secret_access_key"
-  type        = "SecureString"
-  value       = aws_iam_access_key.user_login_logger.secret
   description = "Value set by Terraform -- do not change manually."
 }
 
