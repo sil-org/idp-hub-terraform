@@ -22,7 +22,7 @@ locals {
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 0.15.0"
+  version = "~> 0.15.2"
 
   app_env                      = local.app_env
   app_name                     = var.app_name
