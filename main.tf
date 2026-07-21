@@ -22,7 +22,7 @@ locals {
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 0.15.2"
+  version = "~> 1.0"
 
   app_env                      = local.app_env
   app_name                     = var.app_name
@@ -80,31 +80,45 @@ resource "aws_db_parameter_group" "this" {
 /*
  * Create intermediate DNS record using Cloudflare (e.g. hub-us-east-2.example.com)
  */
-resource "cloudflare_record" "intermediate" {
+resource "cloudflare_dns_record" "intermediate" {
   zone_id = data.cloudflare_zone.this.id
   name    = "${var.subdomain}-${var.aws_region}"
-  value   = module.app.alb_dns_name
+  content = module.app.alb_dns_name
   type    = "CNAME"
   comment = "intermediate record - DO NOT change this"
   proxied = var.enable_cloudflare_proxy
+  ttl     = 1
+}
+
+moved {
+  from = cloudflare_record.intermediate
+  to   = cloudflare_dns_record.intermediate
 }
 
 /*
  * Create public DNS record using Cloudflare (e.g. hub.example.com)
  */
-resource "cloudflare_record" "public" {
+resource "cloudflare_dns_record" "public" {
   count = local.is_multiregion_primary || !local.is_multiregion ? 1 : 0
 
   zone_id = data.cloudflare_zone.this.id
   name    = var.subdomain
-  value   = cloudflare_record.intermediate.hostname
+  content = cloudflare_dns_record.intermediate.name
   type    = "CNAME"
   comment = "public record - this can be changed for failover"
   proxied = var.enable_cloudflare_proxy
+  ttl     = 1
+}
+
+moved {
+  from = cloudflare_record.public
+  to   = cloudflare_dns_record.public
 }
 
 data "cloudflare_zone" "this" {
-  name = var.cloudflare_domain
+  filter = {
+    name = var.cloudflare_domain
+  }
 }
 
 
@@ -160,7 +174,7 @@ locals {
  */
 module "ecr" {
   source  = "sil-org/ecr/aws"
-  version = "~> 0.3.0"
+  version = "~> 1.0"
 
   repo_name             = local.ecr_repo_name
   instance_role_arn     = module.app.ecsInstanceRole_arn
@@ -193,7 +207,7 @@ resource "aws_dynamodb_table" "logger" {
  */
 module "ssm_backup" {
   source  = "sil-org/ssm-backup/aws"
-  version = "~> 2.0"
+  version = "~> 2.2"
 
   app_env        = var.app_env
   app_name       = var.app_name
@@ -211,7 +225,7 @@ module "aws_backup" {
   count = var.enable_aws_backup ? 1 : 0
 
   source  = "sil-org/backup/aws"
-  version = "~> 0.2.2"
+  version = "~> 1.0"
 
   app_name = "${var.app_name}-${var.aws_region}"
   app_env  = var.app_env
