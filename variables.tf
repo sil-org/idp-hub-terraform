@@ -244,6 +244,12 @@ variable "enable_adminer" {
   default     = false
 }
 
+variable "adminer_require_totp" {
+  description = "Require TOTP for Adminer login"
+  type        = bool
+  default     = false
+}
+
 
 /*
  * AWS Backup
