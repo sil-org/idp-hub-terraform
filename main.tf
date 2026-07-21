@@ -22,7 +22,7 @@ locals {
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 1.0"
+  version = "~> 1.1"
 
   app_env                      = local.app_env
   app_name                     = var.app_name
@@ -48,6 +48,7 @@ module "app" {
   default_cert_domain_name     = "*.${var.cloudflare_domain}"
   create_adminer               = true
   enable_adminer               = var.enable_adminer
+  adminer_require_totp         = var.adminer_require_totp
   rds_ca_cert_identifier       = "rds-ca-rsa2048-g1"
   log_retention_in_days        = 60
   asg_tags                     = local.tags
