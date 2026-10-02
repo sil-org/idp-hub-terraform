@@ -186,24 +186,6 @@ module "ecr" {
 
 
 /*
- * DynamoDB table for user login activity logging
- */
-
-resource "aws_dynamodb_table" "logger" {
-  name         = "${local.app_name_and_env}-user-log"
-  billing_mode = "PAY_PER_REQUEST"
-  attribute {
-    name = "ID"
-    type = "S"
-  }
-  hash_key = "ID"
-  ttl {
-    enabled        = true
-    attribute_name = "ExpiresAt"
-  }
-}
-
-/*
  * SSM Parameter Store backup
  */
 module "ssm_backup" {
@@ -232,7 +214,6 @@ module "aws_backup" {
   app_env  = var.app_env
   source_arns = [
     module.app.database_arn,
-    aws_dynamodb_table.logger.arn
   ]
   backup_schedule        = "cron(${var.aws_backup_cron_schedule})"
   notification_events    = var.aws_backup_notification_events
@@ -322,22 +303,6 @@ resource "aws_iam_role" "ecs_task" {
             "aws:SourceAccount" = local.aws_account
           }
         }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "ecs_task" {
-  name = "ecs-task"
-  role = aws_iam_role.ecs_task.id
-
-  policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Action" : ["dynamodb:PutItem"],
-        "Resource" : aws_dynamodb_table.logger.arn
       }
     ]
   })
