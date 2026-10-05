@@ -55,7 +55,6 @@ module "app" {
   disable_public_ipv4          = true
   enable_ipv6                  = true
   execution_role_arn           = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn                = aws_iam_role.ecs_task.arn
   use_cloudflare_sg            = var.use_cloudflare_security_group
 
   database_auto_minor_version_upgrade = true
@@ -186,24 +185,6 @@ module "ecr" {
 
 
 /*
- * DynamoDB table for user login activity logging
- */
-
-resource "aws_dynamodb_table" "logger" {
-  name         = "${local.app_name_and_env}-user-log"
-  billing_mode = "PAY_PER_REQUEST"
-  attribute {
-    name = "ID"
-    type = "S"
-  }
-  hash_key = "ID"
-  ttl {
-    enabled        = true
-    attribute_name = "ExpiresAt"
-  }
-}
-
-/*
  * SSM Parameter Store backup
  */
 module "ssm_backup" {
@@ -232,7 +213,6 @@ module "aws_backup" {
   app_env  = var.app_env
   source_arns = [
     module.app.database_arn,
-    aws_dynamodb_table.logger.arn
   ]
   backup_schedule        = "cron(${var.aws_backup_cron_schedule})"
   notification_events    = var.aws_backup_notification_events
@@ -293,51 +273,6 @@ resource "aws_iam_role_policy" "ecs_task_execution_ssm_policy" {
         Resource = [
           "arn:aws:ssm:${var.aws_region}:${local.aws_account}:parameter${local.parameter_path}/*"
         ]
-      }
-    ]
-  })
-}
-
-/*
- * ECS Task Role for the app to use during normal operation
- */
-
-resource "aws_iam_role" "ecs_task" {
-  name = "ecs-task-${var.app_name}-${var.app_env}-${var.aws_region}"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-        Condition = {
-          ArnLike = {
-            "aws:SourceArn" = "arn:aws:ecs:${var.aws_region}:${local.aws_account}:*"
-          }
-          StringEquals = {
-            "aws:SourceAccount" = local.aws_account
-          }
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "ecs_task" {
-  name = "ecs-task"
-  role = aws_iam_role.ecs_task.id
-
-  policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Action" : ["dynamodb:PutItem"],
-        "Resource" : aws_dynamodb_table.logger.arn
       }
     ]
   })

@@ -22,10 +22,6 @@ output "cd_user_secret_access_key_id" {
   sensitive = true
 }
 
-output "user_log_table" {
-  value = aws_dynamodb_table.logger.name
-}
-
 output "alb_dns_name" {
   value = module.app.alb_dns_name
 }
