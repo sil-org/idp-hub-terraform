@@ -22,7 +22,7 @@ locals {
 
 module "app" {
   source  = "sil-org/ecs-app/aws"
-  version = "~> 1.1"
+  version = "~> 1.2"
 
   app_env                      = local.app_env
   app_name                     = var.app_name
@@ -61,6 +61,11 @@ module "app" {
   database_auto_minor_version_upgrade = true
   database_engine_version             = local.database_engine_version
   database_parameter_group_name       = aws_db_parameter_group.this.name
+
+  use_transit_gateway                             = var.use_transit_gateway
+  transit_gateway_id                              = var.transit_gateway_id
+  transit_gateway_default_route_table_association = var.transit_gateway_default_route_table_association
+  transit_gateway_default_route_table_propagation = var.transit_gateway_default_route_table_propagation
 
   health_check = {
     matcher = "302,303"
