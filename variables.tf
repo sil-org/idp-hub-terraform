@@ -153,6 +153,12 @@ variable "theme_color_scheme" {
  * DNS configuration
  */
 
+variable "cert_domain_name" {
+  description = "Domain name of an existing ACM certificate to use for the ALB, e.g. \"*.login.example.com\". Leave empty to use \"*.<cloudflare_domain>\"."
+  type        = string
+  default     = ""
+}
+
 variable "cloudflare_domain" {
   description = "The domain name on which to host the app. Combined with \"subdomain\" to create an ALB listener rule. Also used for the optional DNS record."
   type        = string
@@ -313,6 +319,12 @@ variable "delete_recovery_point_after_days" {
 /*
  * Cloudflare configuration
  */
+
+variable "dns_record_tags" {
+  description = "Tags for the Cloudflare DNS records, e.g. [\"managed_by:terraform\", \"repo:idp-hub-terraform\"]. Not supported on the Cloudflare Free plan."
+  type        = list(string)
+  default     = null
+}
 
 variable "enable_cloudflare_proxy" {
   description = "Enable the Cloudflare proxy service on the CAM DNS record"
