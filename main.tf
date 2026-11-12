@@ -51,6 +51,7 @@ module "app" {
   enable_adminer               = var.enable_adminer
   adminer_require_totp         = var.adminer_require_totp
   rds_ca_cert_identifier       = "rds-ca-rsa2048-g1"
+  alb_log_retention_days       = 60
   log_retention_in_days        = 60
   asg_tags                     = local.tags
   disable_public_ipv4          = true
